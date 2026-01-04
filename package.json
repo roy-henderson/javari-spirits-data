@@ -1,15 +1,15 @@
 {
-  "name": "javari-spirits-data",
-  "version": "3.0.0",
-  "description": "Javari Spirits comprehensive alcohol database import",
-  "main": "import-complete.cjs",
+  "name": "javari-spirits-harvester",
+  "version": "1.0.0",
+  "description": "Continuous alcohol dataset discovery and ingestion",
+  "main": "harvester.cjs",
   "scripts": {
-    "import": "node import-complete.cjs",
-    "test": "node -e \"console.log('OK')\""
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "csv-parse": "^5.5.0",
-    "node-fetch": "^2.7.0"
+    "harvest": "node harvester.cjs",
+    "harvest:iowa": "node harvester.cjs iowa",
+    "harvest:ct": "node harvester.cjs connecticut",
+    "harvest:md": "node harvester.cjs montgomery",
+    "harvest:cocktails": "node harvester.cjs cocktails",
+    "harvest:breweries": "node harvester.cjs breweries",
+    "discover": "node harvester.cjs discover"
   }
 }
