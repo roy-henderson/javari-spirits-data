@@ -977,3 +977,64 @@ async function importIowaProductsCatalog() {
   log(`   ✅ Inserted ${inserted.toLocaleString()}`);
   return inserted;
 }
+
+// CocktailDB (237 cocktails with full recipes)
+async function importCocktailDB() {
+  log('🍸 Importing CocktailDB...');
+  const content = readFile('cocktaildb_parsed.csv');
+  if (!content) { log('   File not found'); return 0; }
+  
+  const lines = content.split('\n').filter(l => l.trim()).slice(1);
+  const products = [];
+  
+  for (const line of lines) {
+    const fields = parseCSVLine(line);
+    if (fields.length < 12) continue;
+    
+    const [id, name, category, glass, alcoholic, instructions, ing1, meas1, ing2, meas2, ing3, meas3] = fields;
+    if (!name || name.length < 2) continue;
+    
+    const ingredients = [];
+    if (ing1) ingredients.push({ ingredient: ing1, measure: meas1 });
+    if (ing2) ingredients.push({ ingredient: ing2, measure: meas2 });
+    if (ing3) ingredients.push({ ingredient: ing3, measure: meas3 });
+    
+    products.push({
+      name: truncate(name, 255),
+      category: 'cocktails',
+      subcategory: truncate(category, 100),
+      description: truncate(instructions, 2000),
+      source: 'cocktaildb',
+      source_id: `cdb_${id}`,
+      metadata: { 
+        glass,
+        alcoholic: alcoholic === 'Alcoholic',
+        ingredients,
+        cocktaildb_id: id
+      }
+    });
+  }
+  
+  log(`   Parsed ${products.length.toLocaleString()} cocktails`);
+  stats.totalParsed += products.length;
+  const inserted = await batchInsert(products, 'cocktaildb');
+  stats.bySource['cocktaildb'] = inserted;
+  log(`   ✅ Inserted ${inserted.toLocaleString()}`);
+  return inserted;
+}
+
+// Add to importers array - update main() to include this
+
+// Run affiliate enrichment after import
+async function runAffiliateEnrichment() {
+  try {
+    const { enrichProductsWithAffiliateLinks } = require('./awin-integration.cjs');
+    log('💰 Running affiliate link enrichment...');
+    const result = await enrichProductsWithAffiliateLinks(5000);
+    log(`   ✅ Enriched ${result.enriched} products with affiliate links`);
+    return result;
+  } catch (e) {
+    log(`   ⚠️ Affiliate enrichment skipped: ${e.message}`);
+    return { enriched: 0 };
+  }
+}
