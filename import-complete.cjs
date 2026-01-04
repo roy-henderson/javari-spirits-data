@@ -926,3 +926,54 @@ main().catch(e => {
   console.error(e);
   process.exit(1);
 });
+
+// Iowa Products Catalog (10,640 products - official government data)
+async function importIowaProductsCatalog() {
+  log('🥃 Importing Iowa Products Catalog...');
+  const content = readFile('iowa_products_catalog.csv');
+  if (!content) { log('   File not found'); return 0; }
+  
+  const lines = content.split('\n').filter(l => l.trim()).slice(1);
+  const products = [];
+  
+  for (const line of lines) {
+    const fields = parseCSVLine(line);
+    if (fields.length < 16) continue;
+    
+    const [itemNumber, categoryName, itemDescription, vendorId, vendorName, volumeMl, pack, , age, proof, listDate, upc, , cost, , retail] = fields;
+    if (!itemDescription || itemDescription.length < 2) continue;
+    
+    // Determine main category
+    let mainCat = 'spirits';
+    const cn = (categoryName || '').toLowerCase();
+    
+    products.push({
+      name: truncate(itemDescription, 255),
+      category: mainCat,
+      subcategory: truncate(categoryName, 100),
+      brand: truncate(vendorName, 100),
+      price: parseNumber(retail),
+      alcohol_content: parseNumber(proof) ? parseNumber(proof) / 2 : null, // Proof to ABV
+      size: volumeMl ? `${volumeMl}ml` : null,
+      source: 'iowa_catalog',
+      source_id: `iac_${itemNumber}`,
+      metadata: { 
+        item_number: itemNumber,
+        vendor_id: vendorId,
+        upc,
+        proof: parseNumber(proof),
+        age: parseNumber(age),
+        pack_size: parseNumber(pack),
+        list_date: listDate,
+        state_cost: parseNumber(cost)
+      }
+    });
+  }
+  
+  log(`   Parsed ${products.length.toLocaleString()} products`);
+  stats.totalParsed += products.length;
+  const inserted = await batchInsert(products, 'iowa_catalog');
+  stats.bySource['iowa_catalog'] = inserted;
+  log(`   ✅ Inserted ${inserted.toLocaleString()}`);
+  return inserted;
+}
