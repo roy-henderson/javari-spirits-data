@@ -1,5 +1,8 @@
 /**
- * JAVARI SPIRITS - AWIN AFFILIATE INTEGRATION
+ * JAVARI SPIRITS - AWIN AFFILIATE INTEGRATION v2.0
+ * 
+ * Complete Awin API Integration for Alcohol Affiliate Programs
+ * Includes product feeds, commission tracking, and auto-sync
  * 
  * Connects products to Awin affiliate network for monetization
  * Supports 300+ alcohol advertisers
