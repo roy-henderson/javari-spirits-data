@@ -36,17 +36,20 @@ node import-all.cjs
 
 | Source | Records | Category | File |
 |--------|---------|----------|------|
-| Total Wine | 1,558 | Wine | total_wine.csv |
-| Open Beer DB | 5,900 | Beer | open_beer_db.csv |
-| Craft Cans | 2,400+ | Craft Beer | craft_cans.csv |
 | WineMag | 150,000 | Wine Reviews | winemag_150k.csv |
 | Kaggle Wine | 130,000 | Wine Reviews | kaggle_wine_reviews_130k.csv |
 | Beer.csv | 66,000 | Beer | beer.csv |
 | SAQ Database | 12,000 | Quebec Liquor | saq_db.csv |
-| ML Whiskey | 3,000+ | Whiskey | ml_whiskey.csv |
 | Open Brewery | 9,000 | Breweries | openbrewerydb_full.csv |
+| Open Beer DB | 5,900 | Beer | open_beer_db.csv |
+| Makispl Whiskey | 3,158 | Premium Whiskey | makispl_whiskey.csv |
+| ML Whiskey | 3,158 | Whiskey | ml_whiskey.csv |
+| Nickhould Beers | 2,411 | Craft Beer | nickhould_beers.csv |
+| Craft Cans | 2,400+ | Craft Beer | craft_cans.csv |
+| Total Wine | 1,558 | Wine | total_wine.csv |
+| Strathclyde | 86 | Scotch Whisky | strathclyde_whiskies.csv |
 
-**Total Potential:** ~370,000+ products
+**Total Potential:** ~384,000+ products
 
 ## File Structure
 
