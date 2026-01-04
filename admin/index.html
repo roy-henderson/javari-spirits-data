@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Javari Spirits - Data Harvester Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .toast { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-amber-500">🥃 Javari Spirits</h1>
+                <p class="text-gray-400">Data Harvester Admin</p>
+            </div>
+            <div id="stats" class="text-right">
+                <div class="text-2xl font-bold text-green-400" id="productCount">-</div>
+                <div class="text-sm text-gray-400">Products</div>
+            </div>
+        </div>
+
+        <!-- Quick Add Section -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-bold mb-4 text-amber-400">⚡ Quick Add Source</h2>
+            <p class="text-gray-400 mb-4">Paste a URL from ChatGPT, Copilot, or any data source. We'll auto-detect the details.</p>
+            
+            <div class="flex gap-4 mb-4">
+                <input type="text" id="quickUrl" placeholder="Paste dataset URL here..." 
+                    class="flex-1 bg-gray-700 border border-gray-600 rounded px-4 py-3 text-white placeholder-gray-400 focus:border-amber-500 focus:outline-none">
+                <button onclick="quickAdd()" class="bg-amber-600 hover:bg-amber-500 px-6 py-3 rounded font-bold transition">
+                    Add Source
+                </button>
+            </div>
+            
+            <div class="text-sm text-gray-500">
+                Supported: data.gov, GitHub, Kaggle, HuggingFace, Zenodo, state .gov sites, CSV/JSON URLs
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-6">
+            <button onclick="showTab('add')" id="tabAdd" class="tab-btn px-4 py-2 rounded bg-amber-600">Add New Source</button>
+            <button onclick="showTab('queue')" id="tabQueue" class="tab-btn px-4 py-2 rounded bg-gray-700">Discovery Queue</button>
+            <button onclick="showTab('sources')" id="tabSources" class="tab-btn px-4 py-2 rounded bg-gray-700">Active Sources</button>
+            <button onclick="showTab('bulk')" id="tabBulk" class="tab-btn px-4 py-2 rounded bg-gray-700">Bulk Import</button>
+        </div>
+
+        <!-- Add New Source Form -->
+        <div id="addPanel" class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-6 text-amber-400">📥 Add New Data Source</h2>
+            
+            <form id="addSourceForm" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Source Name *</label>
+                        <input type="text" name="source_name" required
+                            class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:border-amber-500 focus:outline-none"
+                            placeholder="e.g., California ABC Price List">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Source URL *</label>
+                        <input type="url" name="source_url" required
+                            class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:border-amber-500 focus:outline-none"
+                            placeholder="https://...">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Publisher</label>
+                        <select name="publisher" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                            <option value="gov">Government</option>
+                            <option value="community">Community</option>
+                            <option value="org">Organization</option>
+                            <option value="affiliate">Affiliate</option>
+                            <option value="academic">Academic</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Format</label>
+                        <select name="format" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="xlsx">Excel</option>
+                            <option value="api">API</option>
+                            <option value="html">HTML (scrape)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Country/Region</label>
+                        <input type="text" name="country_region"
+                            class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2"
+                            placeholder="e.g., US-CA, UK, global">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Alcohol Types</label>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="spirits" class="mr-2"> Spirits
+                        </label>
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="whiskey" class="mr-2"> Whiskey
+                        </label>
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="wine" class="mr-2"> Wine
+                        </label>
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="beer" class="mr-2"> Beer
+                        </label>
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="tequila" class="mr-2"> Tequila
+                        </label>
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="rum" class="mr-2"> Rum
+                        </label>
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="gin" class="mr-2"> Gin
+                        </label>
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="vodka" class="mr-2"> Vodka
+                        </label>
+                        <label class="inline-flex items-center bg-gray-700 px-3 py-1 rounded cursor-pointer hover:bg-gray-600">
+                            <input type="checkbox" name="alcohol_types" value="cocktail" class="mr-2"> Cocktails
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">License</label>
+                        <input type="text" name="license_name"
+                            class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2"
+                            placeholder="e.g., Public Domain, CC BY 4.0, ODbL">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Priority (1=highest, 10=lowest)</label>
+                        <input type="number" name="priority" min="1" max="10" value="5"
+                            class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Notes</label>
+                    <textarea name="notes" rows="2"
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2"
+                        placeholder="Source description, special instructions, etc."></textarea>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="bg-green-600 hover:bg-green-500 px-6 py-3 rounded font-bold transition">
+                        ✅ Add Source & Queue for Ingestion
+                    </button>
+                    <button type="button" onclick="testSource()" class="bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded font-bold transition">
+                        🔍 Test URL First
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Discovery Queue Panel -->
+        <div id="queuePanel" class="bg-gray-800 rounded-lg p-6 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-amber-400">📋 Discovery Queue</h2>
+                <button onclick="loadQueue()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded">🔄 Refresh</button>
+            </div>
+            <div id="queueList" class="space-y-3">Loading...</div>
+        </div>
+
+        <!-- Active Sources Panel -->
+        <div id="sourcesPanel" class="bg-gray-800 rounded-lg p-6 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-amber-400">📊 Active Data Sources</h2>
+                <button onclick="loadSources()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded">🔄 Refresh</button>
+            </div>
+            <div id="sourcesList" class="space-y-3">Loading...</div>
+        </div>
+
+        <!-- Bulk Import Panel -->
+        <div id="bulkPanel" class="bg-gray-800 rounded-lg p-6 hidden">
+            <h2 class="text-xl font-bold mb-4 text-amber-400">📦 Bulk Import Sources</h2>
+            <p class="text-gray-400 mb-4">Paste multiple URLs (one per line) from ChatGPT, Copilot, or other sources:</p>
+            
+            <textarea id="bulkUrls" rows="10" 
+                class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-3 mb-4 font-mono text-sm"
+                placeholder="https://data.gov/dataset/example1
+https://github.com/user/alcohol-data
+https://huggingface.co/datasets/wine-reviews
+..."></textarea>
+            
+            <button onclick="bulkImport()" class="bg-amber-600 hover:bg-amber-500 px-6 py-3 rounded font-bold transition">
+                Import All URLs
+            </button>
+            <span id="bulkStatus" class="ml-4 text-gray-400"></span>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toasts" class="fixed top-4 right-4 space-y-2 z-50"></div>
+    </div>
+
+    <script>
+        // Supabase config - will be injected by deployment
+        const SUPABASE_URL = 'https://kteobfyferrukqeolofj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0ZW9iZnlmZXJydWtxZW9sb2ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxOTcyNjYsImV4cCI6MjA3NzU1NzI2Nn0.F5Y3JhBVhVZFUOlPVvjJvoLPNYb2WKgNjuLleL7JNVU';
+
+        // API helper
+        async function api(table, method = 'GET', body = null, params = '') {
+            const url = `${SUPABASE_URL}/rest/v1/${table}${params}`;
+            const options = {
+                method,
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': method === 'POST' ? 'return=representation' : ''
+                }
+            };
+            if (body) options.body = JSON.stringify(body);
+            const res = await fetch(url, options);
+            return res.json();
+        }
+
+        // Toast notifications
+        function toast(message, type = 'success') {
+            const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-blue-600' };
+            const div = document.createElement('div');
+            div.className = `toast ${colors[type]} px-4 py-3 rounded shadow-lg`;
+            div.textContent = message;
+            document.getElementById('toasts').appendChild(div);
+            setTimeout(() => div.remove(), 4000);
+        }
+
+        // Tab switching
+        function showTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.replace('bg-amber-600', 'bg-gray-700'));
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.replace('bg-gray-700', 'bg-amber-600');
+            
+            ['add', 'queue', 'sources', 'bulk'].forEach(t => {
+                document.getElementById(`${t}Panel`).classList.toggle('hidden', t !== tab);
+            });
+            
+            if (tab === 'queue') loadQueue();
+            if (tab === 'sources') loadSources();
+        }
+
+        // Quick add from URL
+        async function quickAdd() {
+            const url = document.getElementById('quickUrl').value.trim();
+            if (!url) return toast('Please enter a URL', 'error');
+            
+            // Auto-detect source info from URL
+            let source = { source_url: url, status: 'approved', priority: 3 };
+            
+            if (url.includes('data.gov')) {
+                source.publisher = 'gov';
+                source.source_name = 'Data.gov Dataset';
+            } else if (url.includes('github.com')) {
+                source.publisher = 'community';
+                source.source_name = url.split('/').slice(-2).join('/');
+                source.format = 'github';
+            } else if (url.includes('kaggle.com')) {
+                source.publisher = 'community';
+                source.source_name = 'Kaggle Dataset';
+            } else if (url.includes('huggingface.co')) {
+                source.publisher = 'community';
+                source.source_name = 'HuggingFace Dataset';
+                source.format = 'parquet';
+            } else if (url.endsWith('.csv')) {
+                source.format = 'csv';
+                source.source_name = url.split('/').pop();
+            } else if (url.endsWith('.json')) {
+                source.format = 'json';
+                source.source_name = url.split('/').pop();
+            } else {
+                source.source_name = new URL(url).hostname;
+            }
+            
+            source.alcohol_types = ['spirits'];
+            
+            try {
+                await api('dataset_sources', 'POST', source);
+                toast(`✅ Added: ${source.source_name}`);
+                document.getElementById('quickUrl').value = '';
+                loadStats();
+            } catch (e) {
+                toast('Failed to add source: ' + e.message, 'error');
+            }
+        }
+
+        // Add source from form
+        document.getElementById('addSourceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = new FormData(form);
+            
+            const source = {
+                source_name: data.get('source_name'),
+                source_url: data.get('source_url'),
+                publisher: data.get('publisher'),
+                format: data.get('format'),
+                country_region: data.get('country_region'),
+                license_name: data.get('license_name'),
+                priority: parseInt(data.get('priority')) || 5,
+                notes: data.get('notes'),
+                status: 'approved',
+                alcohol_types: data.getAll('alcohol_types')
+            };
+            
+            try {
+                await api('dataset_sources', 'POST', source);
+                toast(`✅ Added: ${source.source_name}`);
+                form.reset();
+                loadStats();
+            } catch (e) {
+                toast('Failed to add source', 'error');
+            }
+        });
+
+        // Bulk import
+        async function bulkImport() {
+            const urls = document.getElementById('bulkUrls').value.trim().split('\n').filter(u => u.trim());
+            if (urls.length === 0) return toast('No URLs entered', 'error');
+            
+            document.getElementById('bulkStatus').textContent = `Importing ${urls.length} sources...`;
+            let success = 0, failed = 0;
+            
+            for (const url of urls) {
+                const trimmed = url.trim();
+                if (!trimmed) continue;
+                
+                try {
+                    const source = {
+                        source_url: trimmed,
+                        source_name: trimmed.split('/').pop() || new URL(trimmed).hostname,
+                        status: 'approved',
+                        priority: 5,
+                        alcohol_types: ['spirits']
+                    };
+                    await api('dataset_sources', 'POST', source);
+                    success++;
+                } catch (e) {
+                    failed++;
+                }
+            }
+            
+            document.getElementById('bulkStatus').textContent = '';
+            toast(`Imported: ${success} success, ${failed} failed`);
+            document.getElementById('bulkUrls').value = '';
+            loadStats();
+        }
+
+        // Load discovery queue
+        async function loadQueue() {
+            const data = await api('discovery_queue', 'GET', null, '?status=eq.pending&order=priority_score.asc&limit=50');
+            const list = document.getElementById('queueList');
+            
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="text-gray-400">No pending discoveries</p>';
+                return;
+            }
+            
+            list.innerHTML = data.map(d => `
+                <div class="bg-gray-700 rounded p-4 flex justify-between items-center">
+                    <div>
+                        <div class="font-bold">${d.discovered_title || 'Unknown'}</div>
+                        <div class="text-sm text-gray-400">${d.discovered_url}</div>
+                        <div class="text-xs text-gray-500">From: ${d.discovered_from} | Priority: ${d.priority_score}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="approveSource('${d.id}')" class="bg-green-600 hover:bg-green-500 px-3 py-1 rounded text-sm">✅ Approve</button>
+                        <button onclick="rejectSource('${d.id}')" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-sm">❌ Reject</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Approve discovered source
+        async function approveSource(id) {
+            const data = await api('discovery_queue', 'GET', null, `?id=eq.${id}`);
+            if (!data || data.length === 0) return;
+            
+            const d = data[0];
+            
+            // Add to dataset_sources
+            await api('dataset_sources', 'POST', {
+                source_name: d.discovered_title,
+                source_url: d.discovered_url,
+                status: 'approved',
+                alcohol_types: d.alcohol_types_detected || ['spirits'],
+                format: d.format_detected,
+                priority: d.priority_score
+            });
+            
+            // Update queue status
+            await api('discovery_queue', 'PATCH', { status: 'approved' }, `?id=eq.${id}`);
+            
+            toast('✅ Source approved and queued for ingestion');
+            loadQueue();
+            loadStats();
+        }
+
+        // Reject discovered source
+        async function rejectSource(id) {
+            await api('discovery_queue', 'PATCH', { status: 'rejected' }, `?id=eq.${id}`);
+            toast('Source rejected');
+            loadQueue();
+        }
+
+        // Load active sources
+        async function loadSources() {
+            const data = await api('dataset_sources', 'GET', null, '?order=priority.asc&limit=50');
+            const list = document.getElementById('sourcesList');
+            
+            list.innerHTML = data.map(s => `
+                <div class="bg-gray-700 rounded p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-bold">${s.source_name}</div>
+                            <div class="text-sm text-gray-400">${s.source_url}</div>
+                            <div class="text-xs text-gray-500">
+                                ${s.publisher || ''} | ${s.format || ''} | ${s.country_region || 'Global'}
+                                ${s.row_count ? ` | ${s.row_count.toLocaleString()} rows` : ''}
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 rounded text-xs ${
+                            s.status === 'ingested' ? 'bg-green-600' :
+                            s.status === 'approved' ? 'bg-blue-600' :
+                            s.status === 'error' ? 'bg-red-600' : 'bg-gray-600'
+                        }">${s.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/canonical_products?select=id&limit=1`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Prefer': 'count=exact' }
+                });
+                const count = res.headers.get('content-range')?.split('/')[1] || '0';
+                document.getElementById('productCount').textContent = parseInt(count).toLocaleString();
+            } catch (e) {}
+        }
+
+        // Test source URL
+        async function testSource() {
+            const url = document.querySelector('[name="source_url"]').value;
+            if (!url) return toast('Enter a URL first', 'error');
+            toast('Testing URL... (check console)', 'info');
+            // In production, this would call a backend endpoint to test the URL
+        }
+
+        // Init
+        loadStats();
+    </script>
+</body>
+</html>
