@@ -1,0 +1,16 @@
+{
+  "name": "javari-spirits-import",
+  "version": "1.0.0",
+  "description": "Automated product data import for Javari Spirits",
+  "main": "import-cjs.cjs",
+  "scripts": {
+    "import": "node import-cjs.cjs",
+    "import:retry": "./retry-import.sh"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.89.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
