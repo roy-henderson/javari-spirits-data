@@ -24,11 +24,11 @@ jobs:
       - name: Install dependencies
         run: npm install
       
-      - name: Run import
-        run: node direct-import.cjs
+      - name: Run full import
+        run: node full-import.cjs
       
       - name: Summary
         if: always()
         run: |
-          echo "## Import Report" >> $GITHUB_STEP_SUMMARY
+          echo "## Import Complete" >> $GITHUB_STEP_SUMMARY
           echo "**Date:** $(TZ='America/New_York' date)" >> $GITHUB_STEP_SUMMARY
