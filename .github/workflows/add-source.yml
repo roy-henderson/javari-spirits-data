@@ -1,0 +1,56 @@
+name: Add Data Source
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Dataset URL'
+        required: true
+        type: string
+      name:
+        description: 'Source name (optional)'
+        required: false
+        type: string
+      type:
+        description: 'Alcohol type'
+        required: false
+        default: 'spirits'
+        type: choice
+        options:
+          - spirits
+          - whiskey
+          - vodka
+          - gin
+          - rum
+          - tequila
+          - wine
+          - beer
+          - cocktail
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Add Source
+        run: |
+          URL="${{ github.event.inputs.url }}"
+          NAME="${{ github.event.inputs.name }}"
+          TYPE="${{ github.event.inputs.type }}"
+          
+          echo "Adding source: $URL"
+          node add-source.cjs "$URL" "$NAME" "$TYPE"
+      
+      - name: Summary
+        run: |
+          echo "## Source Added" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ github.event.inputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Type:** ${{ github.event.inputs.type }}" >> $GITHUB_STEP_SUMMARY
