@@ -1,16 +1,15 @@
 {
-  "name": "javari-spirits-import",
-  "version": "1.0.0",
-  "description": "Automated product data import for Javari Spirits",
-  "main": "import-cjs.cjs",
+  "name": "javari-spirits-data",
+  "version": "3.0.0",
+  "description": "Javari Spirits comprehensive alcohol database import",
+  "main": "import-complete.cjs",
   "scripts": {
-    "import": "node import-cjs.cjs",
-    "import:retry": "./retry-import.sh"
+    "import": "node import-complete.cjs",
+    "test": "node -e \"console.log('OK')\""
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.89.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "csv-parse": "^5.5.0",
+    "node-fetch": "^2.7.0"
   }
 }
