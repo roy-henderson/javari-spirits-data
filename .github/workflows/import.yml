@@ -1,7 +1,6 @@
-name: Javari Spirits Complete Automation
+name: Javari Spirits Import
 
 on:
-  # Manual trigger
   workflow_dispatch:
     inputs:
       import_type:
@@ -12,31 +11,18 @@ on:
         options:
           - full
           - incremental
-          - specific
-      source:
-        description: 'Specific source (if specific selected)'
-        required: false
-        default: ''
 
-  # Weekly full import - Sundays 3 AM ET
   schedule:
     - cron: '0 8 * * 0'
 
-  # Daily incremental - 6 AM ET
-  schedule:
-    - cron: '0 11 * * *'
-
-  # On push to main
   push:
     branches: [main]
     paths:
       - 'import-complete.cjs'
-      - 'data/**'
 
 env:
   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
   SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-  NODE_VERSION: '20'
 
 jobs:
   import:
@@ -52,97 +38,31 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || npm install
       
-      - name: Verify Supabase connection
+      - name: Verify connection
         run: |
           node -e "
             const { createClient } = require('@supabase/supabase-js');
             const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
             supabase.from('products').select('*', { count: 'exact', head: true })
               .then(r => {
-                if (r.error) throw new Error(r.error.message);
-                console.log('✅ Connected. Current products:', r.count);
+                if (r.error) { console.error('Error:', r.error.message); process.exit(1); }
+                console.log('Connected. Products:', r.count);
               })
-              .catch(e => {
-                console.error('❌ Connection failed:', e.message);
-                process.exit(1);
-              });
+              .catch(e => { console.error('Failed:', e.message); process.exit(1); });
           "
       
-      - name: Run complete import
+      - name: Run import
         run: node import-complete.cjs
-        env:
-          IMPORT_TYPE: ${{ github.event.inputs.import_type || 'full' }}
       
       - name: Generate report
         if: always()
         run: |
-          echo "## Javari Spirits Import Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Run Date:** $(TZ='America/New_York' date '+%Y-%m-%d %H:%M:%S ET')" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered By:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Import Type:** ${{ github.event.inputs.import_type || 'scheduled' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Get final count
-          COUNT=$(node -e "
-            const { createClient } = require('@supabase/supabase-js');
-            const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-            supabase.from('products').select('*', { count: 'exact', head: true })
-              .then(r => console.log(r.count || 0))
-              .catch(() => console.log('error'));
-          " 2>/dev/null || echo "unknown")
-          
-          echo "**Total Products:** $COUNT" >> $GITHUB_STEP_SUMMARY
-
-  health-check:
-    runs-on: ubuntu-latest
-    needs: import
-    if: always()
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run health check
-        run: node javari-integration.cjs health
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-
-  notify:
-    runs-on: ubuntu-latest
-    needs: [import, health-check]
-    if: always()
-    
-    steps:
-      - name: Send notification
-        if: ${{ secrets.WEBHOOK_URL != '' }}
-        run: |
-          curl -X POST "${{ secrets.WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "event": "import_complete",
-              "status": "${{ needs.import.result }}",
-              "health": "${{ needs.health-check.result }}",
-              "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
-              "run_id": "${{ github.run_id }}"
-            }' || true
-      
-      - name: Log result
-        run: |
-          echo "Import: ${{ needs.import.result }}"
-          echo "Health: ${{ needs.health-check.result }}"
+          echo "## Import Report" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(TZ='America/New_York' date '+%Y-%m-%d %H:%M:%S ET')" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
