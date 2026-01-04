@@ -2,19 +2,8 @@ name: Javari Spirits Import
 
 on:
   workflow_dispatch:
-    inputs:
-      import_type:
-        description: 'Import type'
-        required: false
-        default: 'full'
-        type: choice
-        options:
-          - full
-          - incremental
-
   schedule:
     - cron: '0 8 * * 0'
-
   push:
     branches: [main]
     paths:
@@ -32,17 +21,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          lfs: true
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci || npm install
+        run: npm install
       
       - name: Verify connection
         run: |
@@ -60,9 +46,8 @@ jobs:
       - name: Run import
         run: node import-complete.cjs
       
-      - name: Generate report
+      - name: Report
         if: always()
         run: |
           echo "## Import Report" >> $GITHUB_STEP_SUMMARY
-          echo "**Date:** $(TZ='America/New_York' date '+%Y-%m-%d %H:%M:%S ET')" >> $GITHUB_STEP_SUMMARY
-          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(TZ='America/New_York' date)" >> $GITHUB_STEP_SUMMARY
