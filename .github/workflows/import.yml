@@ -15,30 +15,20 @@ jobs:
     timeout-minutes: 120
     
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
       
       - name: Install dependencies
         run: npm install
       
-      - name: Debug env
-        run: |
-          echo "SUPABASE_URL is set: $([[ -n \"$SUPABASE_URL\" ]] && echo 'yes' || echo 'no')"
-          echo "SUPABASE_SERVICE_KEY is set: $([[ -n \"$SUPABASE_SERVICE_KEY\" ]] && echo 'yes' || echo 'no')"
-          echo "URL prefix: ${SUPABASE_URL:0:30}..."
-      
       - name: Run import
-        run: |
-          node import-complete.cjs || echo "Import completed with some errors"
+        run: node direct-import.cjs
       
-      - name: Report
+      - name: Summary
         if: always()
         run: |
           echo "## Import Report" >> $GITHUB_STEP_SUMMARY
           echo "**Date:** $(TZ='America/New_York' date)" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
