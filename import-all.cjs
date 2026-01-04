@@ -532,7 +532,10 @@ async function main() {
     importBeerCSV,
     importSAQ,
     importMLWhiskey,
-    importOpenBreweryDB
+    importOpenBreweryDB,
+    importNickhould,
+    importMakisplWhiskey,
+    importStrathclydeWhisky
   ];
   
   for (const importer of importers) {
@@ -574,3 +577,132 @@ main().catch(e => {
   log(`Fatal error: ${e.message}`);
   process.exit(1);
 });
+
+// 10. Nickhould Craft Beers (2,400 beers with ABV/IBU)
+async function importNickhould() {
+  log('🍺 Importing Nickhould Craft Beers...');
+  const filePath = path.join(__dirname, 'data', 'nickhould_beers.csv');
+  if (!fs.existsSync(filePath)) { log('   File not found, skipping'); return 0; }
+  
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.split('\n').filter(l => l.trim()).slice(1);
+  const products = [];
+  
+  for (const line of lines) {
+    const fields = parseCSVLine(line);
+    if (fields.length < 7) continue;
+    
+    const [, abv, ibu, id, name, style, breweryId, ounces] = fields;
+    if (!name || name.length < 2) continue;
+    
+    products.push({
+      name: truncate(name, 255),
+      category: 'beer',
+      subcategory: truncate(style || 'Craft Beer', 100),
+      alcohol_content: parseNumber(abv),
+      style: truncate(style, 100),
+      size: ounces ? `${ounces} oz` : null,
+      source: 'nickhould',
+      source_id: `nh_${id || generateId(name)}`,
+      metadata: { ibu: parseNumber(ibu), brewery_id: breweryId, ounces }
+    });
+  }
+  
+  log(`   Parsed ${products.length.toLocaleString()} beers`);
+  stats.totalParsed += products.length;
+  const inserted = await batchInsert(products, 'nickhould');
+  stats.bySource['nickhould'] = inserted;
+  log(`   ✅ Inserted ${inserted.toLocaleString()}`);
+  return inserted;
+}
+
+// 11. Makispl Whiskey (3,000+ premium whiskeys with ratings)
+async function importMakisplWhiskey() {
+  log('🥃 Importing Makispl Premium Whiskey...');
+  const filePath = path.join(__dirname, 'data', 'makispl_whiskey.csv');
+  if (!fs.existsSync(filePath)) { log('   File not found, skipping'); return 0; }
+  
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.split('\n').filter(l => l.trim()).slice(1);
+  const products = [];
+  
+  for (const line of lines) {
+    const fields = parseCSVLine(line);
+    if (fields.length < 6) continue;
+    
+    const [, name, category, rating, price, currency, description] = fields;
+    if (!name || name.length < 2) continue;
+    
+    products.push({
+      name: truncate(name, 255),
+      category: 'spirits',
+      subcategory: truncate(category || 'Whiskey', 100),
+      description: truncate(description, 2000),
+      price: parseNumber(price),
+      style: truncate(category, 100),
+      source: 'makispl_whiskey',
+      source_id: `mpw_${generateId(name)}`,
+      metadata: { rating: parseNumber(rating), currency }
+    });
+  }
+  
+  log(`   Parsed ${products.length.toLocaleString()} whiskeys`);
+  stats.totalParsed += products.length;
+  const inserted = await batchInsert(products, 'makispl_whiskey');
+  stats.bySource['makispl_whiskey'] = inserted;
+  log(`   ✅ Inserted ${inserted.toLocaleString()}`);
+  return inserted;
+}
+
+// 12. Strathclyde Scotch Whiskies (86 single malts with flavor profiles)
+async function importStrathclydeWhisky() {
+  log('🏴󠁧󠁢󠁳󠁣󠁴󠁿 Importing Strathclyde Scotch Whiskies...');
+  const filePath = path.join(__dirname, 'data', 'strathclyde_whiskies.csv');
+  if (!fs.existsSync(filePath)) { log('   File not found, skipping'); return 0; }
+  
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.split('\n').filter(l => l.trim()).slice(1);
+  const products = [];
+  
+  for (const line of lines) {
+    const fields = line.split(',');
+    if (fields.length < 15) continue;
+    
+    const [, distillery, body, sweetness, smoky, medicinal, tobacco, honey, spicy, winey, nutty, malty, fruity, floral] = fields;
+    if (!distillery || distillery.length < 2) continue;
+    
+    products.push({
+      name: truncate(`${distillery} Single Malt Scotch`, 255),
+      category: 'spirits',
+      subcategory: 'Single Malt Scotch',
+      brand: truncate(distillery, 100),
+      country: 'Scotland',
+      style: 'Single Malt Scotch',
+      source: 'strathclyde',
+      source_id: `sc_${generateId(distillery)}`,
+      metadata: {
+        flavor_profile: {
+          body: parseNumber(body),
+          sweetness: parseNumber(sweetness),
+          smoky: parseNumber(smoky),
+          medicinal: parseNumber(medicinal),
+          tobacco: parseNumber(tobacco),
+          honey: parseNumber(honey),
+          spicy: parseNumber(spicy),
+          winey: parseNumber(winey),
+          nutty: parseNumber(nutty),
+          malty: parseNumber(malty),
+          fruity: parseNumber(fruity),
+          floral: parseNumber(floral)
+        }
+      }
+    });
+  }
+  
+  log(`   Parsed ${products.length.toLocaleString()} whiskies`);
+  stats.totalParsed += products.length;
+  const inserted = await batchInsert(products, 'strathclyde');
+  stats.bySource['strathclyde'] = inserted;
+  log(`   ✅ Inserted ${inserted.toLocaleString()}`);
+  return inserted;
+}
